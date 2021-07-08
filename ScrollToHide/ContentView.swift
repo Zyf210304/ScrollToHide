@@ -53,11 +53,11 @@ extension View {
     
     func halfSheet<SheetView: View>(showSheet: Binding<Bool>, @ViewBuilder sheetView: @escaping() -> SheetView)-> some View {
         
-        //why use overlay
+        //why use background
         //bcz it will automatically user the swiftui frame size only
         return self
-            .overlay(
-            
+            .background(
+
                 HalfSheetHelper(sheetView: sheetView(), showSheet: showSheet)
             )
     }
@@ -82,11 +82,32 @@ struct HalfSheetHelper<SheetView: View> : UIViewControllerRepresentable {
         
         if showSheet {
             
-            let sheetController = UIHostingController(rootView: sheetView)
+            let sheetController = CustomHostingController(rootView: sheetView)
             
             uiViewController.present(sheetController, animated: true) {
                 
+                DispatchQueue.main.async {
+                    
+                    
+                    self.showSheet.toggle()
+                }
             }
+        }
+    }
+}
+
+//custom UIHostingController for halfSheet...
+class CustomHostingController<Content: View>: UIHostingController<Content> {
+    
+    override func viewDidLoad() {
+        
+        if let presentationController = presentationController as? UISheetPresentationController {
+            
+            presentationController.detents = [
+            
+                .medium(),
+                .large()
+            ]
         }
     }
 }
