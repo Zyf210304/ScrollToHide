@@ -134,10 +134,12 @@ struct HalfSheetHelper<SheetView: View> : UIViewControllerRepresentable {
         }
         
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-            
+
             parent.showSheet = false
             parent.onEnd()
         }
+
+
     }
     
     
