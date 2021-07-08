@@ -40,8 +40,31 @@ struct Home: View {
             .navigationTitle("Half Modal Sheet")
             .halfSheet(showSheet: $showSheet) {
                 
-                Text("Hello iJustine")
-                    .font(.title.bold())
+                ZStack {
+                    
+                    Color.red
+                    
+                    VStack {
+                        
+                        Text("Hello iJustine")
+                            .font(.title.bold())
+                        
+                        Button {
+                            
+                            showSheet.toggle()
+                            
+                        } label: {
+                            
+                            Text("Close")
+                        }
+                    }
+                   
+
+                }
+                .ignoresSafeArea()
+            } onEnd: {
+                
+                print("Dismissed")
             }
 
         }
@@ -51,14 +74,14 @@ struct Home: View {
 
 extension View {
     
-    func halfSheet<SheetView: View>(showSheet: Binding<Bool>, @ViewBuilder sheetView: @escaping() -> SheetView)-> some View {
+    func halfSheet<SheetView: View>(showSheet: Binding<Bool>, @ViewBuilder sheetView: @escaping() -> SheetView, onEnd: @escaping ()->())-> some View {
         
         //why use background
         //bcz it will automatically user the swiftui frame size only
         return self
             .background(
 
-                HalfSheetHelper(sheetView: sheetView(), showSheet: showSheet)
+                HalfSheetHelper(sheetView: sheetView(), showSheet: showSheet, onEnd: onEnd)
             )
     }
 }
@@ -68,8 +91,16 @@ struct HalfSheetHelper<SheetView: View> : UIViewControllerRepresentable {
     
     var sheetView: SheetView
     @Binding var showSheet: Bool
+    var onEnd: ()->()
+    
     
     let controller = UIViewController()
+    
+    func makeCoordinator() -> Coordinator {
+        
+        return Coordinator(parent: self)
+    }
+    
     
     func makeUIViewController(context: Context) -> UIViewController {
         
@@ -83,23 +114,42 @@ struct HalfSheetHelper<SheetView: View> : UIViewControllerRepresentable {
         if showSheet {
             
             let sheetController = CustomHostingController(rootView: sheetView)
+            sheetController.presentationController?.delegate = context.coordinator
+            uiViewController.present(sheetController, animated: true)
             
-            uiViewController.present(sheetController, animated: true) {
-                
-                DispatchQueue.main.async {
-                    
-                    
-                    self.showSheet.toggle()
-                }
-            }
+        }
+        else {
+            
+            uiViewController.dismiss(animated: true)
         }
     }
+    
+    class Coordinator: NSObject, UISheetPresentationControllerDelegate {
+        
+        var parent: HalfSheetHelper
+        
+        init(parent: HalfSheetHelper) {
+            
+            self.parent = parent
+        }
+        
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            
+            parent.showSheet = false
+            parent.onEnd()
+        }
+    }
+    
+    
+    
 }
 
 //custom UIHostingController for halfSheet...
 class CustomHostingController<Content: View>: UIHostingController<Content> {
     
     override func viewDidLoad() {
+        
+        view.backgroundColor = .clear
         
         if let presentationController = presentationController as? UISheetPresentationController {
             
@@ -108,6 +158,9 @@ class CustomHostingController<Content: View>: UIHostingController<Content> {
                 .medium(),
                 .large()
             ]
+            
+            // to show grab protion... 上面的横条
+            presentationController.prefersGrabberVisible = true
         }
     }
 }
